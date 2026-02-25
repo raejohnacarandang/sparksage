@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from api.auth import decode_token
+import config
 
 router = APIRouter()
 security = HTTPBearer()
@@ -12,7 +13,6 @@ def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     return payload
 
-@router.get("/status")
-async def bot_status(_=Depends(require_auth)):
-    from bot import get_bot_status
-    return get_bot_status()
+@router.get("/api/costs/pricing")
+async def get_pricing(_=Depends(require_auth)):
+    return config.PROVIDER_PRICING

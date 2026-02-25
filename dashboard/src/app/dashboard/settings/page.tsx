@@ -26,6 +26,8 @@ const settingsSchema = z.object({
   OPENROUTER_API_KEY: z.string(),
   ANTHROPIC_API_KEY: z.string(),
   OPENAI_API_KEY: z.string(),
+  WELCOME_CHANNEL_ID: z.string(),
+  WELCOME_MESSAGE: z.string(),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -41,6 +43,8 @@ const DEFAULTS: SettingsForm = {
   OPENROUTER_API_KEY: "",
   ANTHROPIC_API_KEY: "",
   OPENAI_API_KEY: "",
+  WELCOME_CHANNEL_ID: "",
+  WELCOME_MESSAGE: "Welcome {user} to {server}! Feel free to ask SparkSage anything.",
 };
 
 export default function SettingsPage() {
@@ -80,7 +84,6 @@ export default function SettingsPage() {
     if (!token) return;
     setSaving(true);
     try {
-      // Convert to string values for the API, skip masked values (***...)
       const payload: Record<string, string> = {};
       for (const [key, val] of Object.entries(values)) {
         const strVal = String(val);
@@ -228,6 +231,40 @@ export default function SettingsPage() {
                 />
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Onboarding */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Member Onboarding</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="welcome-channel">Welcome Channel ID</Label>
+              <Input
+                id="welcome-channel"
+                placeholder="e.g. 1234567890"
+                {...form.register("WELCOME_CHANNEL_ID")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Channel where welcome messages are posted
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="welcome-message">Welcome Message</Label>
+              <Textarea
+                id="welcome-message"
+                rows={3}
+                placeholder="Welcome {user} to {server}! Feel free to ask SparkSage anything."
+                {...form.register("WELCOME_MESSAGE")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use{" "}
+                <code className="bg-muted px-1 rounded">{"{user}"}</code> and{" "}
+                <code className="bg-muted px-1 rounded">{"{server}"}</code> as placeholders
+              </p>
+            </div>
           </CardContent>
         </Card>
 

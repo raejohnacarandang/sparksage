@@ -93,6 +93,40 @@ PROVIDERS = _build_providers()
 # Build the free fallback chain (order matters)
 FREE_FALLBACK_CHAIN = ["gemini", "groq", "openrouter"]
 
+# Provider pricing (cost per 1k tokens in USD)
+PROVIDER_PRICING = {
+    "gemini": {
+        "input_cost_per_1k":  0.0,
+        "output_cost_per_1k": 0.0,
+        "monthly_budget":     0.0,
+        "free":               True,
+    },
+    "groq": {
+        "input_cost_per_1k":  0.0,
+        "output_cost_per_1k": 0.0,
+        "monthly_budget":     0.0,
+        "free":               True,
+    },
+    "openrouter": {
+        "input_cost_per_1k":  0.0,
+        "output_cost_per_1k": 0.0,
+        "monthly_budget":     0.0,
+        "free":               True,
+    },
+    "anthropic": {
+        "input_cost_per_1k":  0.003,   # claude-sonnet-4-6 input
+        "output_cost_per_1k": 0.015,   # claude-sonnet-4-6 output
+        "monthly_budget":     50.0,
+        "free":               False,
+    },
+    "openai": {
+        "input_cost_per_1k":  0.00015,  # gpt-4o-mini input
+        "output_cost_per_1k": 0.0006,   # gpt-4o-mini output
+        "monthly_budget":     50.0,
+        "free":               False,
+    },
+}
+
 
 def reload_from_db(db_config: dict[str, str]):
     """Reload module-level config variables from DB values."""

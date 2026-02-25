@@ -1,32 +1,27 @@
-"""Unified launcher: starts FastAPI in a background thread and the Discord bot in the main thread."""
-
 import asyncio
 import threading
 import os
 import uvicorn
 
-
 def start_api_server():
-    """Run the FastAPI server in a background thread."""
-    from api.main import create_app
-
-    app = create_app()
-    port = int(os.getenv("DASHBOARD_PORT", "8000"))
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
-
+    try:
+        from api.main import create_app
+        app = create_app()
+        port = int(os.getenv("DASHBOARD_PORT", "8000"))
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    except Exception as e:
+        print(f"Failed to start API server: {e}")
 
 async def _init_database():
-    """Initialize the database and seed config from .env."""
     import db
     await db.init_db()
     await db.sync_env_to_db()
-
 
 def main():
     import config
     import providers
 
-    # Initialize database synchronously before anything else
+    # Initialize DB
     asyncio.run(_init_database())
 
     available = providers.get_available_providers()
@@ -41,28 +36,53 @@ def main():
     port = int(os.getenv("DASHBOARD_PORT", "8000"))
     print(f"  API server starting on http://localhost:{port}")
 
-    # Start Discord bot in main thread
+    # Check Discord token
     if not config.DISCORD_TOKEN:
         print("  WARNING: DISCORD_TOKEN not set — bot will not start.")
-        print("  API server is running. Use the dashboard to configure the bot.")
-        # Keep main thread alive for the API server
         try:
             api_thread.join()
         except KeyboardInterrupt:
             print("\nShutting down...")
-            return
+        return
 
     if not available:
         print("  WARNING: No AI providers configured. Add at least one API key.")
-        print("  You can configure providers through the dashboard.")
 
     print(f"  Primary provider: {config.AI_PROVIDER}")
     print(f"  Fallback chain: {' -> '.join(available) if available else 'none'}")
     print("=" * 50)
 
     from bot import bot
-    bot.run(config.DISCORD_TOKEN)
 
+    async def start_bot():
+        # Load cogs
+        for cog in ["cogs.faq", "cogs.review"]:
+            try:
+                await bot.load_extension(cog)
+                print(f"Loaded cog: {cog}")
+            except Exception as e:
+                print(f"Failed to load {cog}: {e}")
+
+        # Sync slash commands
+        async def _sync_after_ready():
+            await bot.wait_until_ready()
+            try:
+                synced = await bot.tree.sync()
+                print(f"Slash commands synced: {len(synced)}")
+                for cmd in synced:
+                    print(f"  - /{cmd.name}")
+            except Exception as e:
+                print(f"Failed to sync slash commands: {e}")
+
+        asyncio.create_task(_sync_after_ready())
+        await bot.start(config.DISCORD_TOKEN)
+
+    # Windows-safe asyncio.run
+    try:
+        asyncio.run(start_bot())
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(start_bot())
 
 if __name__ == "__main__":
     main()

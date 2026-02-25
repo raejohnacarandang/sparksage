@@ -43,8 +43,8 @@ export function StepSettings() {
             </span>
           </div>
           <Slider
-            value={[data.maxTokens]}
-            onValueChange={([value]) => updateData({ maxTokens: value })}
+            value={[Math.max(128, Math.min(4096, data.maxTokens || 1024))]}
+            onValueChange={([value]) => updateData({ maxTokens: Math.round(value) })}
             min={128}
             max={4096}
             step={64}

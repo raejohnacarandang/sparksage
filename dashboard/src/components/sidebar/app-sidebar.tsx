@@ -11,6 +11,15 @@ import {
   MessageSquare,
   Wand2,
   LogOut,
+  BarChart2,
+  DollarSign,
+  Puzzle,
+  HelpCircle,
+  ShieldCheck,
+  BookOpen,
+  ShieldAlert,
+  MessageSquareDiff,
+  Gauge,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +40,17 @@ const NAV_ITEMS = [
   { title: "Providers", href: "/dashboard/providers", icon: Cpu },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
   { title: "Conversations", href: "/dashboard/conversations", icon: MessageSquare },
+  { title: "Review", href: "/dashboard/review", icon: Wand2 },
+  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
+  { title: "Costs", href: "/dashboard/costs", icon: DollarSign },
+  { title: "Plugins", href: "/dashboard/plugins", icon: Puzzle },
+  { title: "FAQ", href: "/dashboard/faq", icon: HelpCircle },
+  { title: "Permissions", href: "/dashboard/permissions", icon: ShieldCheck },
+  { title: "Digest", href: "/dashboard/digest", icon: BookOpen },
+  { title: "Moderation", href: "/dashboard/moderation", icon: ShieldAlert },
+  { title: "Channel Prompts", href: "/dashboard/channel-prompts", icon: MessageSquareDiff },
+  { title: "Channel Providers", href: "/dashboard/channel-providers", icon: Cpu },
+  { title: "Quota", href: "/dashboard/quota", icon: Gauge },
 ];
 
 export function AppSidebar() {

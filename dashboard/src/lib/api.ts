@@ -137,7 +137,32 @@ export const api = {
   completeWizard: (token: string, data: Record<string, string>) =>
     apiFetch<{ status: string }>("/api/wizard/complete", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ config: data }),
       token,
     }),
+  // Review
+  review: (token: string | undefined, content: string) =>
+    apiFetch<any>("/api/review", {
+      method: "POST",
+      body: JSON.stringify({ content }),
+      token,
+    }),
+
+  // FAQ
+  getFaqs: (token?: string) => apiFetch<any>("/api/faq", { token }),
+  addFaq: (token: string | undefined, question: string, answer: string) =>
+    apiFetch<any>("/api/faq", {
+      method: "POST",
+      body: JSON.stringify({ question, answer }),
+      token,
+    }),
+
+    // Analytics
+  getAnalytics: (token: string) =>
+    apiFetch<any>("/api/analytics/summary", { token }),
+
+// Analytics costs
+  getAnalyticsCosts: (token: string) =>
+    apiFetch<any>("/api/analytics/costs", { token }),
+
 };

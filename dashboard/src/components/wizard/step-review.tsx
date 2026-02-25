@@ -16,12 +16,25 @@ export function StepReview() {
   const { data: session } = useSession();
   const { data, setStep, reset } = useWizardStore();
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
-  const token = (session as { accessToken?: string })?.accessToken;
+  const token = (session as { accessToken?: string | unknown })?.accessToken;
+  if (typeof token !== "string") {
+    return <p className="text-sm text-destructive">Failed to load session</p>;
+  }
 
-  const configuredProviders = Object.entries(data.providers)
-    .filter(([, key]) => key.length > 0)
+  // Safely ensure data types
+  const safeData = {
+    discordToken: data.discordToken || "",
+    botPrefix: data.botPrefix || "!",
+    maxTokens: data.maxTokens || 1024,
+    systemPrompt: data.systemPrompt || "",
+    primaryProvider: data.primaryProvider || "",
+    providers: data.providers || {},
+  };
+
+  const configuredProviders = Object.entries(safeData.providers)
+    .filter(([, key]) => typeof key === "string" && key.length > 0)
     .map(([id]) => id);
 
   async function handleComplete() {
@@ -32,16 +45,16 @@ export function StepReview() {
     try {
       // Build config payload
       const config: Record<string, string> = {
-        discord_token: data.discordToken,
-        ai_provider: data.primaryProvider,
-        bot_prefix: data.botPrefix,
-        max_tokens: String(data.maxTokens),
-        system_prompt: data.systemPrompt,
+        discord_token: safeData.discordToken,
+        ai_provider: safeData.primaryProvider,
+        bot_prefix: safeData.botPrefix,
+        max_tokens: String(safeData.maxTokens),
+        system_prompt: safeData.systemPrompt,
       };
 
       // Add provider keys
-      for (const [id, key] of Object.entries(data.providers)) {
-        if (key) {
+      for (const [id, key] of Object.entries(safeData.providers)) {
+        if (typeof key === "string" && key.length > 0) {
           config[`${id}_api_key`] = key;
         }
       }
@@ -51,7 +64,8 @@ export function StepReview() {
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save configuration");
+      const errorMsg = err instanceof Error ? err.message : String(err) || "Failed to save configuration";
+      setError(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -68,7 +82,7 @@ export function StepReview() {
         </CardHeader>
         <CardContent>
           <p className="text-sm font-mono">
-            {data.discordToken ? `${data.discordToken.slice(0, 20)}...` : "Not configured"}
+            {safeData.discordToken ? `${safeData.discordToken.slice(0, 20)}...` : "Not configured"}
           </p>
         </CardContent>
       </Card>
@@ -88,7 +102,7 @@ export function StepReview() {
               <div key={id} className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <span className="text-sm">{PROVIDER_INFO[id]?.name || id}</span>
-                {id === data.primaryProvider && (
+                {id === safeData.primaryProvider && (
                   <Badge variant="secondary">Primary</Badge>
                 )}
               </div>
@@ -106,25 +120,25 @@ export function StepReview() {
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           <p>
-            <span className="text-muted-foreground">Prefix:</span> {data.botPrefix}
+            <span className="text-muted-foreground">Prefix:</span> {String(safeData.botPrefix)}
           </p>
           <p>
-            <span className="text-muted-foreground">Max tokens:</span> {data.maxTokens}
+            <span className="text-muted-foreground">Max tokens:</span> {String(safeData.maxTokens)}
           </p>
           <p>
             <span className="text-muted-foreground">System prompt:</span>{" "}
-            {data.systemPrompt.length > 100
-              ? `${data.systemPrompt.slice(0, 100)}...`
-              : data.systemPrompt}
+            {safeData.systemPrompt.length > 100
+              ? `${safeData.systemPrompt.slice(0, 100)}...`
+              : safeData.systemPrompt}
           </p>
         </CardContent>
       </Card>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive">{String(error)}</p>}
 
       <Button
         onClick={handleComplete}
-        disabled={submitting || !data.discordToken || configuredProviders.length === 0}
+        disabled={submitting || !safeData.discordToken || configuredProviders.length === 0}
         className="w-full"
         size="lg"
       >

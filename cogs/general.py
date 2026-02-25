@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+import discord
+from discord.ext import commands
+from discord import app_commands
+
+import config
+import providers
+import db as database
+
+
+class General(commands.Cog):
+    """General bot commands: /ask, /clear, /summarize, /provider."""
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    # ── /ask ────────────────────────────────────────────────
+
+    @app_commands.command(name="ask", description="Ask SparkSage a question")
+    @app_commands.describe(question="Your question for SparkSage")
+    async def ask(self, interaction: discord.Interaction, question: str):
+        from bot import ask_ai
+        await interaction.response.defer()
+        response, provider_name = await ask_ai(
+            interaction.channel_id, interaction.user.display_name, question
+        )
+        provider_label = config.PROVIDERS.get(provider_name, {}).get("name", provider_name)
+        footer = f"\n-# Powered by {provider_label}"
+
+        for i in range(0, len(response), 1900):
+            chunk = response[i : i + 1900]
+            if i + 1900 >= len(response):
+                chunk += footer
+            await interaction.followup.send(chunk)
+
+        # Log analytics
+        await database.log_event(
+            "command",
+            guild_id=str(interaction.guild_id) if interaction.guild_id else None,
+            channel_id=str(interaction.channel_id),
+            user_id=str(interaction.user.id),
+            provider=provider_name,
+        )
+
+    # ── /clear ──────────────────────────────────────────────
+
+    @app_commands.command(
+        name="clear", description="Clear SparkSage's conversation memory for this channel"
+    )
+    async def clear(self, interaction: discord.Interaction):
+        await database.clear_messages(str(interaction.channel_id))
+        await interaction.response.send_message("✅ Conversation history cleared!")
+
+    # ── /summarize ──────────────────────────────────────────
+
+    @app_commands.command(
+        name="summarize", description="Summarize the recent conversation in this channel"
+    )
+    async def summarize(self, interaction: discord.Interaction):
+        from bot import ask_ai, get_history
+        await interaction.response.defer()
+        history = await get_history(interaction.channel_id)
+        if not history:
+            await interaction.followup.send("No conversation history to summarize.")
+            return
+
+        summary_prompt = (
+            "Please summarize the key points from this conversation so far "
+            "in a concise bullet-point format."
+        )
+        response, provider_name = await ask_ai(
+            interaction.channel_id, interaction.user.display_name, summary_prompt
+        )
+        await interaction.followup.send(f"**Conversation Summary:**\n{response}")
+
+    # ── /provider ────────────────────────────────────────────
+
+    @app_commands.command(
+        name="provider", description="Show which AI provider SparkSage is currently using"
+    )
+    async def provider(self, interaction: discord.Interaction):
+        primary = config.AI_PROVIDER
+        provider_info = config.PROVIDERS.get(primary, {})
+        available = providers.get_available_providers()
+
+        msg = (
+            f"**Current Provider:** {provider_info.get('name', primary)}\n"
+            f"**Model:** `{provider_info.get('model', '?')}`\n"
+            f"**Free:** {'Yes' if provider_info.get('free') else 'No (paid)'}\n"
+            f"**Fallback Chain:** {' → '.join(available)}"
+        )
+        await interaction.response.send_message(msg)
+
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(General(bot))

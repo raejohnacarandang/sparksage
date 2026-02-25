@@ -31,11 +31,11 @@ export default function DashboardOverview() {
   const primaryProvider = providersData?.providers.find((p) => p.is_primary);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Overview</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Overview</h1>
 
-      {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats cards — 1 col on mobile, 2 on tablet, 4 on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Bot Status</CardTitle>
@@ -63,8 +63,8 @@ export default function DashboardOverview() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {botStatus?.latency != null
-                ? `${Math.round(botStatus.latency)}ms`
+              {botStatus?.latency_ms != null
+                ? `${Math.round(botStatus.latency_ms)}ms`
                 : "--"}
             </p>
           </CardContent>
@@ -76,7 +76,7 @@ export default function DashboardOverview() {
             <Server className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{botStatus?.guilds ?? "--"}</p>
+            <p className="text-2xl font-bold">{botStatus?.guild_count ?? "--"}</p>
           </CardContent>
         </Card>
 
@@ -88,8 +88,8 @@ export default function DashboardOverview() {
           <CardContent>
             {primaryProvider ? (
               <div>
-                <p className="text-lg font-semibold">{primaryProvider.display_name}</p>
-                <p className="text-xs text-muted-foreground">{primaryProvider.model}</p>
+                <p className="text-base sm:text-lg font-semibold">{primaryProvider.display_name}</p>
+                <p className="text-xs text-muted-foreground truncate">{primaryProvider.model}</p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">--</p>
@@ -98,37 +98,61 @@ export default function DashboardOverview() {
         </Card>
       </div>
 
-      {/* Fallback chain */}
+      {/* Fallback chain — wraps nicely on mobile */}
       {providersData && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Fallback Chain</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Fallback Chain</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap items-center gap-2">
               {providersData.fallback_order.map((name, i) => {
                 const prov = providersData.providers.find((p) => p.name === name);
                 return (
-                  <div key={name} className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5">
+                  <div key={name} className="flex items-center gap-1 sm:gap-2">
+                    <div className="flex items-center gap-1.5 rounded-lg border px-2 sm:px-3 py-1 sm:py-1.5">
                       <div
-                        className={`h-2 w-2 rounded-full ${
+                        className={`h-2 w-2 rounded-full flex-shrink-0 ${
                           prov?.configured ? "bg-green-500" : "bg-gray-300"
                         }`}
                       />
-                      <span className="text-sm">{prov?.display_name || name}</span>
+                      <span className="text-xs sm:text-sm">{prov?.display_name || name}</span>
                       {prov?.is_primary && (
-                        <Badge variant="secondary" className="ml-1 text-xs">
+                        <Badge variant="secondary" className="ml-1 text-xs hidden sm:inline-flex">
                           Primary
                         </Badge>
                       )}
                     </div>
                     {i < providersData.fallback_order.length - 1 && (
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                     )}
                   </div>
                 );
               })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Guild list — only show on larger screens inline, stack on mobile */}
+      {botStatus?.guilds && botStatus.guilds.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm sm:text-base">Connected Servers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {botStatus.guilds.map((guild) => (
+                <div
+                  key={guild.id}
+                  className="flex items-center justify-between rounded-lg border px-3 py-2"
+                >
+                  <span className="text-sm font-medium truncate">{guild.name}</span>
+                  <Badge variant="secondary" className="ml-2 flex-shrink-0 text-xs">
+                    {guild.member_count} members
+                  </Badge>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
