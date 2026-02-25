@@ -13,3 +13,7 @@ build/
 dashboard/node_modules/
 dashboard/.next/
 dashboard/.env.local
+
+ffmpeg.exe
+sparksage.db-shm
+sparksage.db-wal
